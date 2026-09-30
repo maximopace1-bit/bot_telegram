@@ -5,48 +5,49 @@ from telegram import Bot
 
 app = Flask(__name__)
 
-# Reemplaza con tus datos reales de Telegram
+# Reemplaza con tus credenciales de Telegram
 TOKEN = "8823488982:AAETbAKO1EOF61NaNtTPUj8xYQ2BtTSiVaM"
 CHAT_ID = "8594314043"
 
 bot = Bot(token=TOKEN)
 
+async def enviar_telegram(texto):
+    async with bot:
+        await bot.send_message(chat_id=CHAT_ID, text=texto, parse_mode="Markdown")
+
 @app.route('/')
 def home():
-    return "¡El bot de señales SMC está activo y funcionando en la nube!"
+    return "¡El bot de señales SMC está activo y funcionando en la nube!", 200
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    datos = request.json
+    datos = request.json or {}
     
-    if datos:
-        activo = datos.get('activo', 'XAUUSD')
-        direccion = datos.get('direccion', 'COMPRA')
-        entrada = datos.get('precio_entrada', 'Mercado')
-        tp = datos.get('tp', 'N/D')
-        sl = datos.get('sl', 'N/D')
-        concepto = datos.get('concepto', 'Estrategia SMC')
+    activo = datos.get('activo', 'XAUUSD')
+    direccion = datos.get('direccion', 'COMPRA')
+    entrada = datos.get('precio_entrada', 'Mercado')
+    tp = datos.get('tp', 'N/D')
+    sl = datos.get('sl', 'N/D')
+    concepto = datos.get('concepto', 'Estrategia SMC')
 
-        mensaje = (
-            f"🚨 *ALERTA INSTITUCIONAL (SMC)* 🚨\n"
-            f"Activo: *{activo}*\n"
-            f"Configuración: _{concepto}_\n"
-            f"-----------------------------------\n"
-            f"📊 *SEÑAL OFICIAL*\n"
-            f"Dirección: *{direccion}*\n"
-            f"Entrada: {entrada}\n"
-            f"TP (Take Profit): {tp}\n"
-            f"SL (Stop Loss): {sl}\n\n"
-            f"⚠️ *Gestión recomendada:* Riesgo máx. 1%."
-        )
+    mensaje = (
+        f"🚨 *ALERTA INSTITUCIONAL (SMC)* 🚨\n"
+        f"Activo: *{activo}*\n"
+        f"Configuración: _{concepto}_\n"
+        f"-----------------------------------\n"
+        f"📊 *SEÑAL OFICIAL*\n"
+        f"Dirección: *{direccion}*\n"
+        f"Entrada: {entrada}\n"
+        f"TP (Take Profit): {tp}\n"
+        f"SL (Stop Loss): {sl}\n\n"
+        f"⚠️ *Gestión recomendada:* Riesgo máx. 1%."
+    )
 
+    try:
         asyncio.run(enviar_telegram(mensaje))
         return {"status": "success"}, 200
-    
-    return {"status": "error"}, 400
-
-async def enviar_telegram(texto):
-    await bot.send_message(chat_id=CHAT_ID, text=texto, parse_mode="Markdown")
+    except Exception as e:
+        return {"status": "error", "message": str(e)}, 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
